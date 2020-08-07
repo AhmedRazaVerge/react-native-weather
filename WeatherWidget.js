@@ -1,10 +1,15 @@
 import React, { Component } from 'react';
-import { NetInfo, Image, View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { NetInfo, Image, View, Text, ActivityIndicator, StyleSheet, Alert } from 'react-native';
+import Geolocation from '@react-native-community/geolocation';
+
 
 class WeatherWidget extends Component {
   constructor(props) {
     super(props);
     this.state = {
+
+      abc: {},
+      location: true,
       isLoading: true,
       icon: 'default',
       temp: '',
@@ -15,23 +20,25 @@ class WeatherWidget extends Component {
   }
 
   componentDidMount() {
-    if (this.props.location){
-      this.setState({locationName: this.props.location})
-    }
+    Geolocation.getCurrentPosition(info => {
 
-    return fetch('https://api.darksky.net/forecast/' + this.props.api + '/' + this.props.lat + ',' + this.props.lng).then((response) => response.json()).then((responseJson) => {
-      this.setState({summary: responseJson.currently.summary, temp: (Math.round(10 * responseJson.currently.temperature)/10) + '°F', icon: responseJson.currently.icon, precipChance: Math.round(responseJson.currently.precipProbability * 1000)/10, isLoading: false});
-    }).catch((error) => {
-      console.error(error);
-      this.setState({isLoading: false});
-    });
+      return fetch('https://api.darksky.net/forecast/' + "40167451faa471bc517e60069321f1f6" + '/' + info.coords.latitude + ',' + info.coords.longitude).then((response) => response.json()).then((responseJson) => {
+        this.setState({ summary: responseJson.currently.summary, temp: (Math.round(10 * responseJson.currently.temperature) / 10), icon: responseJson.currently.icon, precipChance: Math.round(responseJson.currently.precipProbability * 1000) / 10, isLoading: false });
+      }).catch((error) => {
+        console.error("======for this i cant get  weather========>>", error);
+        this.setState({ isLoading: false });
+      });
+    },
+      error => { this.setState({ location: false, isLoading: false }), alert('Cant Not Access Your Location for weather') },
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 });
+
   }
 
   render() {
     if (this.state.isLoading) {
       return (
         <View style={styles.spinner}>
-          <ActivityIndicator size={'small'}/>
+          <ActivityIndicator size={'small'} color="#56CCF2" />
         </View>
       )
     }
@@ -54,28 +61,33 @@ class WeatherWidget extends Component {
       'default': require('./weather-icons/default.png')
     }
 
-    function getIcon(icon){
+    function getIcon(icon) {
       return icons[icon];
     }
-
+    let c = (this.state.temp - 32) * 5 / 9
+    let celcius = c.toFixed() + '°C'
+    // console.log('tempurature in celsius::', celcius)
+    // console.log('tempurature in summary::', this.state.summary)
     return (
-      <View style={styles.container}>
-            <View style={styles.titleContainer}>
-              <Text style={[styles.title, (this.props.location && this.props.location.length <= 13) && styles.customTitle]}>{this.state.locationName}</Text>
-            </View>
-            <View style={[styles.summaryContainer, (this.state.summary.length >= 20) && styles.summaryContainerLong]}>
-              <Text style={styles.summary}>{this.state.summary}</Text>
-              <Image style={styles.icon} source={ getIcon(this.state.icon) } />
-            </View>
-            <View style={styles.tempContainer}>
-              <Text>{this.state.temp}</Text>
-              <View style={{flexDirection: 'row'}}>
-              <Text>
-                {this.state.precipChance}%
-              </Text>
-              <Image style={styles.precipImage} source={require('./weather-icons/precip.png')} />
-              </View>
-            </View>
+      <View>
+        {/* <View style={styles.titleContainer}>
+          <Text style={[styles.title, (this.props.location && this.props.location.length <= 13) && styles.customTitle]}>{this.state.locationName}</Text>
+        </View> */}
+        {/* <View style={[styles.summaryContainer, (this.state.summary.length >= 20) && styles.summaryContainerLong]}>
+          <Text style={styles.summary}>{this.state.summary}</Text>
+          <Image style={styles.icon} source={getIcon(this.state.icon)} />
+        </View> */}
+        {this.state.location ?
+          <View style={styles.tempContainer}>
+            <View ><Text style={{ color: '#CDF0FF', fontSize: 12 }}>Today</Text></View>
+            <Text style={{ fontSize: 30, color: '#fff' }}>{celcius}</Text>
+            <Text style={{ color: '#fff', fontWeight: '400', fontSize: 14 }} >{this.state.summary}</Text>
+
+          </View> :
+          null
+
+        }
+
       </View>
     )
   }
@@ -85,19 +97,24 @@ const styles = StyleSheet.create({
   container: {
     flex: -1,
     flexDirection: 'row',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     position: 'relative',
-    borderTopWidth: 1,
-    borderTopColor: '#8294a0',
-    borderBottomWidth: 1,
-    borderBottomColor: '#8294a0',
+    alignItems: 'center',
+    // borderTopWidth: 1,
+    // borderTopColor: '#8294a0',
+    // borderBottomWidth: 1,
+    // borderBottomColor: '#8294a0',
+    paddingVertical: 10,
+    height: 100,
+    backgroundColor: '#FFFFFF',
+    marginTop: 5
   },
-  titleContainer:{
+  titleContainer: {
     flex: 1,
     borderRightWidth: 1,
     borderRightColor: '#8294a0'
   },
-  title:{
+  title: {
     marginTop: 5,
     marginBottom: 5,
     marginRight: 5,
@@ -105,7 +122,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'right'
   },
-  customTitle:{
+  customTitle: {
     marginTop: 13,
     marginBottom: 13,
     marginRight: 5,
@@ -128,17 +145,23 @@ const styles = StyleSheet.create({
     marginRight: 10
   },
   icon: {
-    marginTop: -6
+    marginTop: -6,
+    height: 50,
+    width: 50,
+
+
   },
   tempContainer: {
-    flex: .5,
-    flexDirection: 'column',
-    marginTop: 3,
-    marginRight: 15,
-    alignItems: 'flex-end'
+    // flex: .5,
+    // flexDirection: 'column',
+    // marginTop: 3,
+    // //marginRight: 15,
+    // alignItems: 'flex-start',
+    // marginLeft: 20
   },
   precipImage: {
-    marginTop: 3
+    marginTop: 3,
+
   },
   spinner: {
     flex: -1,
