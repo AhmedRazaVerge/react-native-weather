@@ -25,7 +25,7 @@ class WeatherWidget extends Component {
       return fetch('https://api.darksky.net/forecast/' + "40167451faa471bc517e60069321f1f6" + '/' + info.coords.latitude + ',' + info.coords.longitude).then((response) => response.json()).then((responseJson) => {
         this.setState({ summary: responseJson.currently.summary, temp: (Math.round(10 * responseJson.currently.temperature) / 10), icon: responseJson.currently.icon, precipChance: Math.round(responseJson.currently.precipProbability * 1000) / 10, isLoading: false });
       }).catch((error) => {
-        console.error("======for this i cant get  weather========>>", error);
+        alert(error);
         this.setState({ isLoading: false });
       });
     },
